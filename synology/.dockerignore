@@ -1,0 +1,12 @@
+# SPDX-FileCopyrightText: 2026 EddieForAI
+# SPDX-License-Identifier: Apache-2.0
+
+*
+!requirements.txt
+!LICENSE
+!NOTICE
+!THIRD-PARTY-NOTICES.md
+!ptfree/
+!ptfree/**
+**/__pycache__/
+**/*.pyc

@@ -1,0 +1,211 @@
+<!doctype html>
+<!-- SPDX-FileCopyrightText: 2026 EddieForAI
+     SPDX-License-Identifier: Apache-2.0 -->
+<html lang="zh-CN">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>PTFree · PT小管家</title><link rel="icon" type="image/png" href="/ptfree.png"><link rel="stylesheet" href="/style.css"></head>
+<body>
+<div id="login" class="login-shell"><section class="login-card"><div class="brand"><img class="logo" src="/ptfree.png" width="44" height="44" alt=""><span class="brand-copy"><strong>PTFree</strong><small>PT小管家</small></span></div><h1>管理登录</h1><form id="login-form"><label>管理密码<input id="password" type="password" autocomplete="current-password" required></label><button class="primary full">进入管理面板 →</button></form><p class="hint">首次启动的随机密码保存在数据目录的<br><b>初始管理密码.txt</b> 中。使用 NAS 局域网 IP 和项目映射端口访问。</p><p id="login-error" class="error"></p><div class="footer-credit"><span>© 2026 EddieForAI</span><a href="/license" target="_blank" rel="noopener">Apache-2.0</a><a href="/notice" target="_blank" rel="noopener">版权与署名</a></div></section></div>
+<div id="shell" hidden>
+<aside><button type="button" class="brand brand-home" data-view="dashboard" aria-label="PTFree 总运行概览"><img class="logo" src="/ptfree.png" width="44" height="44" alt=""><span class="brand-copy"><strong>PTFree</strong><small>PT小管家</small></span></button><button class="nav nav-home active" data-view="dashboard" aria-current="page"><span class="nav-icon" aria-hidden="true">◫</span><span>总运行概览</span></button><div class="nav-group" id="freeseed-nav" hidden><div class="nav-label">Freeseed抢上传</div><nav aria-label="Freeseed抢上传"><button class="nav" data-view="overview"><span class="nav-icon" aria-hidden="true">◫</span><span>运行概览</span></button><button class="nav" data-view="settings"><span class="nav-icon" aria-hidden="true">⚙</span><span>服务配置</span></button><button class="nav" data-view="history"><span class="nav-icon" aria-hidden="true">≡</span><span>下载历史</span></button><button class="nav" data-view="logs"><span class="nav-icon" aria-hidden="true">⌁</span><span>运行日志</span></button></nav></div><div class="nav-group" id="site-nav" hidden>
+<div class="site-nav-heading"><div class="nav-label">PT配置</div><button class="site-nav-add" id="site-nav-add" type="button" aria-label="添加 PT 站点" title="添加 PT 站点">＋</button></div>
+<nav aria-label="PT配置"><button class="nav" data-view="site-config"><span class="site-icon site-icon-20" id="site-nav-icon" aria-hidden="true" hidden></span><span id="site-nav-label">站点管理</span></button></nav></div>
+<div class="nav-label">系统</div><nav aria-label="系统"><button class="nav" data-view="global-config"><span class="nav-icon" aria-hidden="true">⚙</span><span>全局配置</span></button><button class="nav" data-view="help"><span class="nav-icon" aria-hidden="true">?</span><span>使用帮助</span></button></nav><div class="aside-bottom"><div><span class="dot"></span> 本地部署 · <span id="version"></span></div><button id="logout" class="text-button">退出登录 ↗</button></div></aside>
+<main><header><div><h1 id="page-title">总运行概览</h1></div><div class="header-tools"><span id="live" class="pill">正在连接</span><button id="refresh">刷新</button></div></header>
+<div id="notice" class="notice" hidden></div>
+<section id="dashboard" class="view">
+  <div class="cards bg-cards">
+    <article><div class="card-label">实测下行峰值</div><strong id="bg-peak">—</strong><small>最高连续五分钟平均速率</small></article>
+    <article><div class="card-label">实时 PPPoE 下行 / 上行</div><strong id="bg-now">—</strong><small id="bg-latency">等待 RouterOS 采样</small></article>
+    <article><div class="card-label">Freeseed 已处理种子</div><strong id="summary-freeseed-done">—</strong><small id="summary-freeseed-detail">—</small></article>
+  </div>
+  <div class="two-col">
+    <div class="panel"><div class="panel-head summary-panel-heading"><h3>连接状态</h3></div>
+      <div class="check-row"><b>M-Team API</b><span id="api-state">—</span></div>
+      <div class="check-row"><b>qBittorrent</b><span id="summary-qb">—</span></div>
+      <div class="check-row"><b>RouterOS</b><span id="summary-router">—</span></div>
+    </div>
+    <div class="panel"><div class="panel-head summary-panel-heading"><h3>功能模块</h3><button type="button" class="module-management-link" data-view="global-config">管理功能模块</button></div>
+      <div class="check-row"><b>Freeseed抢上传</b><span id="summary-freeseed">—</span></div>
+      
+    </div>
+  </div>
+  <div class="panel bg-usage-panel">
+    <h3>存储与Freeseed 下载累计</h3>
+    <p id="bg-overview-storage" class="hint">等待存储采样</p>
+    <dl id="bg-download-totals" class="bg-download-totals"></dl>
+  </div>
+  <div class="panel bg-chart-panel">
+    <div class="panel-head"><div><h3>带宽与流量</h3><p id="bg-window">按北京时间统计</p></div>
+      <div class="bg-history-nav"><button id="bg-older" aria-label="上一时段">‹</button><select id="bg-period" aria-label="统计周期"><option value="day">最近24小时</option><option value="week">最近7天</option><option value="month">最近30天</option><option value="year">最近365天</option><option value="all">统计以来</option></select><button id="bg-newer" aria-label="下一时段">›</button></div>
+    </div>
+    <div class="bg-legend" aria-label="图例"><span><i class="bg-wan-down"></i>PPPoE 下行</span><span><i class="bg-wan-up"></i>PPPoE 上行</span><span><i class="bg-job-down"></i>Freeseed 下载</span><span><i class="bg-job-up"></i>Freeseed 上传</span></div>
+    <div class="bg-chart-wrap"><canvas id="bg-chart" tabindex="0" aria-label="带宽时间序列，使用左右箭头检查采样点">带宽时间序列</canvas><div id="bg-chart-detail" class="bg-chart-detail" role="status" hidden></div></div>
+    <div class="bg-totals"><div>PPPoE 下 / 上行 <strong id="bg-total-wan">—</strong></div><div>Freeseed下 / 上行 <strong id="bg-total-jobs">—</strong></div><div title="所选时段内有有效采样数据的时间比例">采样覆盖率 <strong id="bg-coverage">—</strong></div></div>
+  </div>
+  <div class="panel"><h3>采样记录</h3><div id="bg-events"></div></div>
+</section>
+<section id="overview" class="view" hidden>
+<div class="cards"><article><span class="card-label">服务状态</span><strong id="service-state">—</strong><small id="service-detail">—</small></article><article><span class="card-label">上次成功检查</span><strong id="last-check">—</strong><small id="next-check">—</small></article><article><span class="card-label">等待处理 / 失败</span><strong id="pending-count">0 / 0</strong><small id="restart-count">看门狗重启 0 次</small></article></div>
+<div class="panel"><div class="panel-head"><div><h3>服务控制</h3><p>先预览筛选结果，再开启真实下载。</p></div></div><div class="actions"><button id="start" class="primary">▶ 启动服务</button><button id="pause">Ⅱ 暂停服务</button><button data-action="preview">预览本页结果</button><button data-action="scan">立即扫描一次</button></div><div id="running" class="hint">当前没有正在执行的操作。</div></div>
+<div class="two-col"><div class="panel"><div class="panel-head"><h3>种子文件保存</h3></div><div class="check-row"><div><b>种子保存目录</b><small id="dir-state">尚未设置</small></div><button data-action="test-dir">测试读写</button></div></div><div class="panel"><div class="panel-head"><h3>近 24 小时请求</h3><span class="muted">持久化计数</span></div><div id="budgets" class="budget-list"></div><p class="hint">种子任务逐个处理，启动间隔至少 3 秒。收到限流后自动冷却。</p></div></div>
+<div class="panel"><div class="panel-head"><h3>最近事件</h3><button class="text-button jump-logs">查看全部 →</button></div><div id="recent-events"></div></div>
+</section>
+<section id="settings" class="view" hidden><form id="config-form">
+<div class="panel site-binding">
+  <h3>适用 PT 站点</h3>
+  <label class="bg-check" data-mteam-choice hidden><input name="freeseed_mteam" type="checkbox" disabled><span class="site-icon site-icon-20" aria-hidden="true"></span>M-Team</label>
+  <p class="muted" data-mteam-empty>请先在「PT配置」添加站点。</p>
+</div>
+<div class="panel"><h3>扫描</h3><div class="form-grid">
+<label>扫描间隔（秒）<input name="interval" type="number" min="120" max="86400" required><small>最低 120 秒，默认 180 秒。</small></label>
+<label>随机增加间隔（秒）<input name="jitter" type="number" min="0" max="600" required></label>
+</div><div class="toggles"><label><input name="dry_run" type="checkbox">仅预览筛选结果</label><label><input name="free_only" type="checkbox">仅下载确认免费的种子</label></div></div>
+<div class="panel"><h3>种子文件保存</h3><div class="form-grid">
+<label>种子文件保存目录<input name="watch_dir" placeholder="/watch"><small>请填容器内路径，默认 /watch。</small></label>
+<div class="limit-field"><label for="fs-min_disk_gib">目录最小剩余空间（GiB）</label><input name="min_disk_gib" type="number" min="0" max="100000" step="any" required id="fs-min_disk_gib"><small>检查目标目录所在磁盘的可用空间。</small></div>
+<label>单种最大尝试次数<input name="max_attempts" type="number" min="1" max="20" required><small>达到次数后停止自动重试，可在历史中手动重试。</small></label>
+<div class="fs-capacity">
+  <h4>Freeseed 内容容量</h4>
+  <div class="form-grid">
+    <label>托管容量（GiB）<input name="managed_gib" type="number" min="0" max="100000" required><small>0 使用现有 .torrent 文件投递方式。启用容量管理后由 qB Web API 添加任务。</small></label>
+    <label>容量满时<select name="managed_full"><option value="wait">停止新增，等待空间</option><option value="oldest">从最旧任务开始回收</option></select><small>仅回收这个功能添加、仍可确认归属的下载。</small></label>
+    <label class="full">qB 主机上的 Freeseed 专用目录<input name="managed_path" placeholder="例如 /downloads/PTFree-Freeseed"><small>在「全局配置」设置 qB Web API 连接。目录填写 qB 看到的绝对路径。</small></label>
+  </div>
+</div>
+</div></div>
+<div class="panel"><h3>种子筛选</h3><div class="form-grid">
+<div class="limit-field"><label for="fs-min_gib">最小体积（GiB）</label><input name="min_gib" type="number" min="0" max="100000" step="any" required id="fs-min_gib"></div><div class="limit-field"><label for="fs-max_gib">最大体积（GiB）</label><input name="max_gib" type="number" min="0" max="100000" step="any" required id="fs-max_gib"></div>
+<div class="limit-field"><label for="fs-min_seeders">最少做种人数</label><input name="min_seeders" type="number" min="0" max="10000000" required id="fs-min_seeders"></div><div class="limit-field"><label for="fs-max_seeders">最多做种人数</label><input name="max_seeders" type="number" min="0" max="10000000" required id="fs-max_seeders"></div>
+<div class="limit-field"><label for="fs-max_age_hours">发布时间不超过（小时）</label><input name="max_age_hours" type="number" min="0" max="87600" step="any" required id="fs-max_age_hours"><small>仍有效的限时免费可跳过发布时间筛选。</small></div>
+<div class="limit-field"><label for="fs-min_free_minutes">免费剩余时间至少（分钟）</label><input name="min_free_minutes" type="number" min="0" max="100000" step="any" required id="fs-min_free_minutes"><small>限时免费已过期的种子仍会跳过。</small></div>
+
+<label>白名单关键词<textarea name="include" rows="4" placeholder="每行一个；任意命中即可，留空不过滤"></textarea></label><label>黑名单关键词<textarea name="exclude" rows="4" placeholder="每行一个；任意命中即排除"></textarea></label>
+</div></div><div class="save-bar"><span>配置保存在本机，敏感字段加密存储。</span><button type="button" id="reload-config">重新载入</button><button type="submit" class="primary">保存 Freeseed 配置</button></div></form>
+
+</section>
+<section id="history" class="view" hidden><div class="panel"><div class="panel-head"><div><h3>持久化下载历史</h3><p>这里可以查看种子文件保存记录，并重试失败项目。</p></div><select id="history-state"><option value="">全部状态</option><option value="done">已完成</option><option value="pending">等待处理</option><option value="waiting_quota">等待配额</option><option value="failed">等待重试</option><option value="exhausted">重试耗尽</option><option value="skipped">已筛除</option><option value="site_existing">站点已有记录</option><option value="publishing">待恢复保存</option></select></div><div class="table-wrap"><table><thead><tr><th>种子</th><th>体积</th><th>状态</th><th>尝试</th><th>说明</th><th>操作</th></tr></thead><tbody id="history-body"></tbody></table></div><div class="pagination"><button id="prev-page">上一页</button><span id="page-info"></span><button id="next-page">下一页</button></div></div></section>
+<section id="logs" class="view" hidden><div class="panel"><div class="panel-head"><h3>运行事件</h3><span class="muted">保留最近 2,000 条 · 显示最新 100 条</span></div><div id="all-events"></div></div></section>
+<section id="site-config" class="view" hidden>
+  <div class="panel site-toolbar">
+    <div class="panel-head"><h3>PT 站点</h3><button type="button" class="primary" id="site-add" aria-label="添加 PT 站点">＋ 添加站点</button></div>
+    <p class="muted" id="site-empty" hidden>尚未添加站点。</p>
+  </div>
+  <dialog id="site-picker" class="site-picker"><div class="panel-head"><h3>添加 PT 站点</h3><button type="button" id="site-picker-close">取消</button></div>
+    <button type="button" class="site-choice" id="site-choose-mteam"><span class="site-icon site-icon-24" aria-hidden="true"></span>M-Team <small id="site-added-status" hidden>已添加</small></button>
+  </dialog>
+  <form id="global-site-form" class="panel" hidden>
+    <h3 class="site-title"><span class="site-icon site-icon-24" aria-hidden="true"></span>M-Team</h3>
+    <div class="form-grid"><label>API 地址<select name="api_base"><option value="https://api.m-team.cc/api">api.m-team.cc</option><option value="https://api.m-team.io/api">api.m-team.io</option></select></label>
+<label>API Access Token<input name="api_key" type="password" autocomplete="new-password" placeholder="填写站点控制台中的存取令牌"><small>只需手动获取一次，无需抓取 Cookie。</small></label>
+<label>网络策略<select name="network"><option value="ipv4_prefer">IPv4 优先，失败后尝试 IPv6</option><option value="ipv4_only">仅 IPv4</option><option value="system">系统默认顺序</option></select></label>
+<label>单次请求超时（秒）<input name="timeout" type="number" min="5" max="60" required></label>
+</div>
+    <div class="site-subsection">
+      <h4>Freeseed 扫描选项</h4>
+      <div class="form-grid">
+        <label>扫描板块<select name="mode"><option value="adult">成人区</option><option value="normal">综合区</option><option value="movie">电影</option><option value="music">音乐</option><option value="tvshow">电视剧</option><option value="all">全部</option></select></label>
+        <label>每次读取条数<input name="page_size" type="number" min="1" max="100" required><small>读取首页最新最多 100 条，不自动翻页。</small></label>
+        <label class="toggle"><input name="local_request_limits" type="checkbox">启用 Freeseed 本地请求配额<small>默认关闭。开启后按本程序设定的小时和日配额暂停 Freeseed 队列。</small></label>
+      </div>
+    </div>
+    <div class="actions bg-card-button"><button type="submit" class="primary">保存 M-Team 设置</button><button id="site-test" data-action="test-site" type="button">测试已保存的认证</button><button id="site-cancel" type="button" hidden>取消添加</button></div>
+  </form>
+  <form id="global-event-form" class="panel" hidden>
+    <h3>M-Team 全站免费活动</h3>
+    <p class="hint">按站方公告填写北京时间。</p>
+    <div class="form-grid">
+      <label>开始（北京时间）<input type="datetime-local" name="site_free_start"></label>
+      <label>结束（北京时间）<input type="datetime-local" name="site_free_end"></label>
+    </div>
+    <button type="submit" class="primary bg-card-button">保存活动时间</button>
+  </form>
+</section>
+<section id="global-config" class="view" hidden>
+  <form class="panel module-form" id="modules-form">
+    <h3>功能模块管理</h3>
+    <div class="module-options">
+      <label class="bg-check"><input name="module_freeseed" type="checkbox">Freeseed抢上传</label>
+    </div>
+    <p class="hint">启用模块后显示对应导航和 PT配置。停用会暂停模块，并保留已保存的站点、配置与历史。</p>
+    <button type="submit" class="primary bg-card-button">保存功能模块</button>
+  </form>
+  <form id="qb-options-form" class="panel">
+    <h3>qBittorrent Web API</h3>
+    <p class="hint">供 Freeseed 直投与流量采样使用。qB 在 Windows 上时，填写该主机的局域网 IP 和 WebUI 端口。</p>
+    <div class="form-grid">
+      <label>Web API 地址<input name="qb_url" type="url" placeholder="http://192.168.1.20:8091"></label>
+      <label>认证方式<select name="qb_auth"><option value="password">用户名和密码</option><option value="api_key">API 密钥（qB 5.2+）</option></select></label>
+      <label>用户名<input name="qb_user" type="text" autocomplete="username"></label>
+      <label>密码<input name="qb_password" type="password" autocomplete="new-password"></label>
+      <label hidden>API 密钥<input name="qb_api_key" type="password" autocomplete="new-password" disabled></label>
+    </div>
+    <div class="actions bg-card-button"><button type="submit" class="primary">保存 qB 设置</button><button type="button" data-test="qb">测试 qB 连接</button></div>
+  </form>
+  <form id="router-options-form" class="panel">
+    <h3>RouterOS 流量采样</h3>
+    <p class="hint">选填。使用 API-SSL 和具备 read、api 权限的账号读取 PPPoE 计数。</p>
+    <div class="form-grid">
+      <label>RouterOS IP 或主机名<input name="ros_host" type="text"></label>
+      <label>API-SSL 端口<input name="ros_port" type="number" min="1" max="65535" required></label>
+      <label>用户名<input name="ros_user" type="text" autocomplete="username"></label>
+      <label>密码<input name="ros_password" type="password" autocomplete="new-password"></label>
+      <label>TLS 证书 SHA-256 指纹<input name="ros_fingerprint" type="text"><small>自签名证书请填指纹。使用容器信任的证书可留空。</small></label>
+      <label>PPPoE 接口名<input name="ros_wan" type="text" placeholder="pppoe-CT"></label>
+      <label>延迟探测主机<input name="latency_peer" type="text"><small>选填，使用能响应 Ping 的主机，只用于展示。</small></label>
+    </div>
+    <div class="actions bg-card-button"><button type="submit" class="primary">保存采样设置</button><button type="button" data-test="router">测试 RouterOS</button></div>
+  </form>
+<div class="panel password-panel"><h3>修改管理密码</h3><form id="change-password"><div class="form-grid"><label>当前密码<input name="old" type="password" autocomplete="current-password" required></label><label>新密码（至少 12 字符）<input name="new" type="password" minlength="12" maxlength="200" autocomplete="new-password" required></label></div><button>修改密码并退出</button></form></div>
+</section>
+<section id="help" class="view" hidden>
+  <article class="panel prose">
+    <h2>Freeseed 抢上传使用帮助</h2>
+    <h3>首次配置和试跑</h3>
+    <ol>
+      <li>在 M-Team「控制台 → 实验室 → 存取令牌」创建 API Access Token。在「PT配置 → M-Team」选择 API 地址、填入令牌并保存，再点「测试已保存的认证」。令牌框留空会保留旧令牌。</li>
+      <li>在「PT配置 → M-Team」设置扫描板块。在「Freeseed → 服务配置」选择 M-Team，设置保存方式和筛选条件，点击「保存 Freeseed 配置」。默认以文件投递方式运行，需填写运行 PTFree 的机器能访问的种子目录。</li>
+      <li>回到 Freeseed「运行概览」，点「测试读写」和「预览本页结果」。预览可以在暂停时执行，会查询列表与站点下载历史，并显示逐条筛选结果。</li>
+      <li>确认后，在「服务配置」取消「仅预览筛选结果」、保存，再在「运行概览」点「启动服务」。可点「立即扫描一次」触发一轮，或等待下次计划。</li>
+    </ol>
+
+    <h3>扫描和筛选</h3>
+    <ul>
+      <li><b>扫描范围</b>　每轮读取配置板块的第一页，至多 100 条。默认间隔 180 秒，最低 120 秒，可在其上叠加随机间隔。</li>
+      <li><b>免费条件</b>　默认只接受确认免费的种子，包括标准免费、双倍上传免费和有效的单种优惠。有限截止时间的免费种子须满足剩余时间，且优惠仍有效。明确标记免费的种子若没有截止时间，仍可通过此项。置顶本身不代表免费。正式申请前会复核详情；详情缺少部分活动信息时可用本轮列表结果补充。</li>
+      <li><b>数值筛选</b>　体积、做种人数、发布时间和免费剩余时间均可按字段勾选「不限」。勾选后对应数值停用，取消后填写正数，再保存。仍在有效期内的限时免费可跳过发布时间筛选，但仍受体积、人数、剩余时间和关键词等条件约束。</li>
+      <li><b>关键词与 HR</b>　每行一个普通关键词，忽略大小写。白名单填写后需至少命中一条，黑名单命中任意一条即排除。明确标记 HR、不可见或已封禁的种子会跳过。</li>
+      <li><b>全站免费</b>　在「PT配置」按站方公告录入开始和结束时间，时区为北京时间。正式复核时，活动期间符合其余筛选条件的老种也可进入 Freeseed，单种优惠仍按各自时限判断。</li>
+    </ul>
+
+    <h3>保存种子文件与 qB 容量管理</h3>
+    <ul>
+      <li><b>文件投递</b>　托管容量为 0 时，PTFree 将种子保存为 <code>MT-种子ID.torrent</code>。qB 需要自行监控该目录才会接收。目录最低剩余空间可以勾选「不限」，系统仍需具备写权限和写入文件所需空间。</li>
+      <li><b>托管容量</b>　填写正数后，通过「全局配置」的 qB Web API 直接添加任务。再填写 qB 主机上的专用绝对目录。「容量满时」可选择等待空间，或由 PTFree 从最旧且可确认归属的 Freeseed 托管任务开始回收任务和内容。回收依据是 PTFree 的托管记录，原有 qB 任务和文件投递任务不参与。</li>
+      <li><b>测试读写</b>　文件投递模式检查保存目录；启用托管容量时检查 qB 连接和托管配置。</li>
+    </ul>
+
+    <h3>去重、重试和状态</h3>
+    <ul>
+      <li><b>下载历史</b>　按状态筛选，查看种子 ID、保存时间或首次发现时间、尝试次数与原因。站点确认已下载或正在做种的种子会跳过。站点历史查询失败时暂缓申请。站点尚未记录的文件也会经过本地去重；写入中断可用持久化记录恢复。</li>
+      <li><b>运行日志和重试</b>　查看筛除、失败、等待配额等原因。网络失败会退避重试；单种达到最大次数后，可在「下载历史」手动重试。任务逐条发起，启动间隔至少 3 秒。认证异常时暂停自动请求，更新令牌或通过认证测试后恢复。</li>
+      <li><b>配额和冷却</b>　「运行概览」显示近 24 小时请求计数。开启本地请求配额后，队列达到程序上限会等待滚动窗口释放。站点限流也会触发冷却；页面显示来源、剩余时间和预计恢复时间。</li>
+    </ul>
+
+    <h3>服务控制、监控和备份</h3>
+    <ul>
+      <li>「暂停服务」停止 Freeseed 扫描。使用 Container Manager 停止或启动整个项目。IPv4 选项影响 PTFree 的站点请求。</li>
+      <li>网络请求和操作进程有超时，网页长时间失去心跳时看门狗会尝试重启。<code>/healthz</code> 检查网页进程是否存活；<code>/metrics</code> 支持管理会话或数据目录 <code>metrics.token</code> 中的专用只读令牌。</li>
+      <li>备份前停止整个项目，再复制映射到 <code>/data</code> 的目录。配置、历史、数据库、认证文件和 <code>secret.key</code> 一起备份。管理密码可在「全局配置」底部修改。</li>
+    </ul>
+    <h3>首页流量统计</h3>
+    <ul>
+      <li>配置 RouterOS 后显示实时 PPPoE 上下行和所选时段内最高的连续五分钟下行平均值。</li>
+      <li>配置 qB 后显示 Freeseed 下载累计和上传、下载曲线。目录投递按种子哈希和 qB 加入时间关联。统计从本实例启用采样开始。</li>
+      <li>可按最近24小时、7天、30天、365天和统计以来查看。图表纵轴统一使用 Mbps，下方显示流量总量和采样覆盖率。</li>
+    </ul>
+  </article>
+</section>
+<footer><div class="footer-credit"><span>© 2026 EddieForAI</span><a href="/license" target="_blank" rel="noopener">Apache-2.0</a><a href="/notice" target="_blank" rel="noopener">版权与署名</a></div><span>群晖 Container Manager</span></footer>
+</main></div><div id="toast" role="status" hidden></div>
+<dialog id="result-dialog"><div class="panel-head"><h3 id="result-title">操作结果</h3><button id="close-dialog">关闭 ×</button></div><div id="result-content"></div></dialog>
+<script src="/app.js"></script><script src="/statistics.js"></script></body></html>
